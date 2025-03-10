@@ -17,8 +17,7 @@ if (!fs.existsSync(TEMP_FOLDER)) {
 }
 
 // Шрифт для демотиватора
-const DEMOTIVATOR_FONT = 'C:\\Users\\79963\\Desktop\\BOTJS\\arial.ttf'; // Укажите полный путь к шрифту
-registerFont(DEMOTIVATOR_FONT, { family: 'Arial' });
+const DEMOTIVATOR_FONT = 'Arial'; // Используем системный шрифт
 
 // Инициализация бота
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
