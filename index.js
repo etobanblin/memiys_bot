@@ -39,20 +39,22 @@ app.get('/', (req, res) => {
     res.send('Бот работает!');
 });
 
-const server = app.listen(PORT, () => {
-    console.log(`Веб-сервер запущен на порту ${PORT}`);
-}).on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-        // Если порт 3000 занят, используем другой порт
-        const alternatePort = 3001;
-        console.log(`Порт ${PORT} занят, пробуем использовать порт ${alternatePort}`);
-        app.listen(alternatePort, () => {
-            console.log(`Веб-сервер запущен на порту ${alternatePort}`);
-        });
-    } else {
-        console.error(`Ошибка запуска сервера: ${err}`);
-    }
-});
+// Функция для поиска свободного порта
+function startServerOnAvailablePort(startPort) {
+    const server = app.listen(startPort, () => {
+        console.log(`Веб-сервер запущен на порту ${startPort}`);
+    }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`Порт ${startPort} занят, пробуем использовать порт ${startPort + 1}`);
+            startServerOnAvailablePort(startPort + 1);
+        } else {
+            console.error(`Ошибка запуска сервера: ${err}`);
+        }
+    });
+}
+
+// Начинаем с порта, указанного в PORT
+startServerOnAvailablePort(PORT);
 
 // Клавиатура меню
 const menuKeyboard = {
