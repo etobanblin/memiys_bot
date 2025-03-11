@@ -4,7 +4,7 @@ const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
 const axios = require('axios');
 const express = require('express');
-const { Configuration, OpenAIApi } = require('openai'); // Подключение OpenAI
+const OpenAI = require('openai'); // Подключение OpenAI
 
 // Токен вашего бота
 const BOT_TOKEN = '8011558643:AAFc3P3Brnhb1bSWcp7IwyVD45_EFO7XVmM';
@@ -29,10 +29,9 @@ if (!fs.existsSync(MEMES_VIBE_FOLDER)) fs.mkdirSync(MEMES_VIBE_FOLDER);
 if (!fs.existsSync(MEMES_AUGURY_FOLDER)) fs.mkdirSync(MEMES_AUGURY_FOLDER);
 
 // Инициализация OpenAI
-const configuration = new Configuration({
+const openai = new OpenAI({
     apiKey: OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 // Инициализация бота
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
@@ -78,13 +77,13 @@ function getRandomMeme(folder) {
 async function generatePrediction() {
     try {
         const prompt = "Сгенерируй короткое забавное предсказание на основе мема. Предсказание должно быть смешным и неожиданным.";
-        const response = await openai.createCompletion({
-            model: "text-davinci-003", // Модель GPT
+        const response = await openai.completions.create({
+            model: "gpt-3.5-turbo-instruct", // Современная модель (замена для text-davinci-003)
             prompt: prompt,
             max_tokens: 50, // Ограничение длины предсказания
             temperature: 0.7, // Уровень креативности
         });
-        return response.data.choices[0].text.trim();
+        return response.choices[0].text.trim();
     } catch (e) {
         console.error(`Ошибка при генерации предсказания: ${e}`);
         return "Сегодня будет удачный день! 🍀"; // Запасное предсказание
