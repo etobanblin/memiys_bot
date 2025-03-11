@@ -4,13 +4,10 @@ const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
 const axios = require('axios');
 const express = require('express');
-const OpenAI = require('openai'); // Подключение OpenAI
+const { exec } = require('child_process'); // Для вызова Python-скрипта
 
 // Токен вашего бота
 const BOT_TOKEN = '8011558643:AAFc3P3Brnhb1bSWcp7IwyVD45_EFO7XVmM';
-
-// Ключ API OpenAI
-const OPENAI_API_KEY = 'ваш_api_ключ_openai'; // Замените на ваш ключ OpenAI
 
 // Папки
 const MEMES_DAY_FOLDER = 'memes_day'; // Папка для мемов дня
@@ -27,11 +24,6 @@ if (!fs.existsSync(TEMP_FOLDER)) fs.mkdirSync(TEMP_FOLDER);
 if (!fs.existsSync(MEMES_DAY_FOLDER)) fs.mkdirSync(MEMES_DAY_FOLDER);
 if (!fs.existsSync(MEMES_VIBE_FOLDER)) fs.mkdirSync(MEMES_VIBE_FOLDER);
 if (!fs.existsSync(MEMES_AUGURY_FOLDER)) fs.mkdirSync(MEMES_AUGURY_FOLDER);
-
-// Инициализация OpenAI
-const openai = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-});
 
 // Инициализация бота
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
@@ -73,21 +65,26 @@ function getRandomMeme(folder) {
     }
 }
 
-// Функция для генерации предсказания с помощью OpenAI
-async function generatePrediction() {
-    try {
-        const prompt = "Сгенерируй короткое забавное предсказание на основе мема. Предсказание должно быть смешным и неожиданным.";
-        const response = await openai.completions.create({
-            model: "gpt-3.5-turbo-instruct", // Современная модель (замена для text-davinci-003)
-            prompt: prompt,
-            max_tokens: 50, // Ограничение длины предсказания
-            temperature: 0.7, // Уровень креативности
+// Функция для генерации предсказания с помощью Python-скрипта
+async function generatePrediction(prompt) {
+    return new Promise((resolve, reject) => {
+        const pythonScriptPath = path.join(__dirname, 'generate_prediction.py');
+        const command = `python3 ${pythonScriptPath} "${prompt}"`;
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Ошибка при выполнении Python-скрипта: ${error}`);
+                resolve("🔮 Сегодня будет удачный день! 🍀"); // Запасное предсказание
+                return;
+            }
+            if (stderr) {
+                console.error(`Ошибка в Python-скрипте: ${stderr}`);
+                resolve("🔮 Сегодня будет удачный день! 🍀"); // Запасное предсказание
+                return;
+            }
+            resolve(stdout.trim()); // Возвращаем результат из Python-скрипта
         });
-        return response.choices[0].text.trim();
-    } catch (e) {
-        console.error(`Ошибка при генерации предсказания: ${e}`);
-        return "Сегодня будет удачный день! 🍀"; // Запасное предсказание
-    }
+    });
 }
 
 // Обработчик команды /start
@@ -99,9 +96,9 @@ bot.onText(/\/start/, (msg) => {
 bot.onText(/📸 Мем дня/, async (msg) => {
     const memePath = getRandomMeme(MEMES_DAY_FOLDER);
     if (memePath) {
-        await bot.sendPhoto(msg.chat.id, memePath, { caption: '📸 Вот твой мем дня!' });
+        await bot.sendPhoto(msg.chat.id, memePath, { caption: '📸 Вот твой мем дня!', reply_markup: menuKeyboard });
     } else {
-        bot.sendMessage(msg.chat.id, '😢 Мемов дня пока нет!');
+        bot.sendMessage(msg.chat.id, '😢 Мемов дня пока нет!', menuKeyboard);
     }
 });
 
@@ -109,10 +106,10 @@ bot.onText(/📸 Мем дня/, async (msg) => {
 bot.onText(/🔮 Гадание по мему/, async (msg) => {
     const memePath = getRandomMeme(MEMES_AUGURY_FOLDER);
     if (memePath) {
-        const prediction = await generatePrediction(); // Генерация предсказания
-        await bot.sendPhoto(msg.chat.id, memePath, { caption: `🔮 ${prediction}` });
+        const prediction = await generatePrediction("Сгенерируй забавное предсказание на основе мема.");
+        await bot.sendPhoto(msg.chat.id, memePath, { caption: `🔮 ${prediction}`, reply_markup: menuKeyboard });
     } else {
-        bot.sendMessage(msg.chat.id, '😢 Мемов для гадания пока нет!');
+        bot.sendMessage(msg.chat.id, '😢 Мемов для гадания пока нет!', menuKeyboard);
     }
 });
 
@@ -120,15 +117,15 @@ bot.onText(/🔮 Гадание по мему/, async (msg) => {
 bot.onText(/🎲 Рандомный вайб/, async (msg) => {
     const memePath = getRandomMeme(MEMES_VIBE_FOLDER);
     if (memePath) {
-        await bot.sendPhoto(msg.chat.id, memePath, { caption: '🎲 Вот твой вайб!' });
+        await bot.sendPhoto(msg.chat.id, memePath, { caption: '🎲 Вот твой вайб!', reply_markup: menuKeyboard });
     } else {
-        bot.sendMessage(msg.chat.id, '😢 Вайб-мемов пока нет!');
+        bot.sendMessage(msg.chat.id, '😢 Вайб-мемов пока нет!', menuKeyboard);
     }
 });
 
 // Обработчик команды "Создать демотиватор"
 bot.onText(/🖼️ Создать демотиватор/, (msg) => {
-    bot.sendMessage(msg.chat.id, 'Отправь мне изображение для демотиватора.');
+    bot.sendMessage(msg.chat.id, 'Отправь мне изображение для демотиватора.', menuKeyboard);
     userState[msg.chat.id] = { step: 'waiting_for_image' };
 });
 
@@ -143,7 +140,7 @@ bot.on('photo', async (msg) => {
         const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
         fs.writeFileSync(imagePath, response.data);
         userState[chatId] = { step: 'waiting_for_text', imagePath };
-        bot.sendMessage(chatId, 'Теперь отправь текст для демотиватора.');
+        bot.sendMessage(chatId, 'Теперь отправь текст для демотиватора.', menuKeyboard);
     }
 });
 
@@ -154,9 +151,9 @@ bot.on('message', async (msg) => {
         const text = msg.text;
         const demotivatorPath = await createDemotivator(userState[chatId].imagePath, text);
         if (demotivatorPath) {
-            await bot.sendPhoto(chatId, demotivatorPath, { caption: '🖼️ Ваш демотиватор готов!' });
+            await bot.sendPhoto(chatId, demotivatorPath, { caption: '🖼️ Ваш демотиватор готов!', reply_markup: menuKeyboard });
         } else {
-            bot.sendMessage(chatId, '😢 Не удалось создать демотиватор.');
+            bot.sendMessage(chatId, '😢 Не удалось создать демотиватор.', menuKeyboard);
         }
         delete userState[chatId];
     }
