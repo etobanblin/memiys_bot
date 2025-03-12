@@ -36,10 +36,22 @@ app.post(`/${BOT_TOKEN}`, (req, res) => {
     res.sendStatus(200);
 });
 
-app.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
-    console.log(`Вебхук установлен: ${webhookUrl}`);
-});
+// Функция для поиска свободного порта
+function startServer(port) {
+    const server = app.listen(port, '0.0.0.0', () => {
+        console.log(`Сервер запущен на порту ${port}`);
+        console.log(`Вебхук установлен: ${webhookUrl}`);
+    }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`Порт ${port} занят, пробуем порт ${port + 1}`);
+            startServer(port + 1);
+        } else {
+            console.error('Ошибка при запуске сервера:', err);
+        }
+    });
+}
+
+startServer(PORT);
 
 // Клавиатура меню
 const menuKeyboard = {
@@ -120,6 +132,9 @@ bot.onText(/🎲 Рандомный вайб/, async (msg) => {
         bot.sendMessage(msg.chat.id, '😢 Вайб-мемов пока нет!', menuKeyboard);
     }
 });
+
+// Состояние пользователей
+const userState = {};
 
 // Обработчик команды "Создать демотиватор"
 bot.onText(/🖼️ Создать демотиватор/, (msg) => {
