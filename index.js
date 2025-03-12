@@ -39,22 +39,34 @@ app.get('/', (req, res) => {
     res.send('Бот работает!');
 });
 
-// Функция для поиска свободного порта
-function startServerOnAvailablePort(startPort) {
-    const server = app.listen(startPort, () => {
-        console.log(`Веб-сервер запущен на порту ${startPort}`);
-    }).on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            console.log(`Порт ${startPort} занят, пробуем использовать порт ${startPort + 1}`);
-            startServerOnAvailablePort(startPort + 1);
+// Используем kill-port для освобождения портов
+const killPort = require('kill-port');
+
+// Функция для запуска сервера
+async function startServer(port) {
+    try {
+        // Пытаемся освободить порт перед использованием
+        await killPort(port);
+        
+        const server = app.listen(port, () => {
+            console.log(`Веб-сервер запущен на порту ${port}`);
+        });
+        
+        return server;
+    } catch (error) {
+        console.error(`Ошибка при запуске сервера на порту ${port}: ${error}`);
+        // Если не удалось освободить порт, пробуем следующий
+        if (port < 3010) { // Ограничиваем до 10 попыток
+            console.log(`Пробуем порт ${port + 1}...`);
+            return startServer(port + 1);
         } else {
-            console.error(`Ошибка запуска сервера: ${err}`);
+            console.error('Не удалось найти свободный порт после нескольких попыток');
         }
-    });
+    }
 }
 
-// Начинаем с порта, указанного в PORT
-startServerOnAvailablePort(PORT);
+// Запускаем сервер на указанном порту
+startServer(PORT);
 
 // Клавиатура меню
 const menuKeyboard = {
