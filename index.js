@@ -1,23 +1,19 @@
 const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
 const axios = require('axios');
-const express = require('express');
-const { exec } = require('child_process'); // Для вызова Python-скрипта
+const { exec } = require('child_process');
 
 // Токен вашего бота
 const BOT_TOKEN = '8011558643:AAFc3P3Brnhb1bSWcp7IwyVD45_EFO7XVmM';
 
 // Папки
-const MEMES_DAY_FOLDER = 'memes_day'; // Папка для мемов дня
-const MEMES_VIBE_FOLDER = 'memes_vibe'; // Папка для вайб-мемов
-const MEMES_AUGURY_FOLDER = 'memes_augury'; // Папка для гадания по мемам
-const TEMP_FOLDER = 'temp'; // Папка для временных файлов
-const CONFIG_FOLDER = '.config'; // Папка для конфигураций
-const GIT_FOLDER = '.git'; // Папка для Git
-const UPM_FOLDER = '.upm'; // Папка для UPM
-const NODE_MODULES_FOLDER = 'node_modules'; // Папка для зависимостей Node.js
+const MEMES_DAY_FOLDER = 'memes_day';
+const MEMES_VIBE_FOLDER = 'memes_vibe';
+const MEMES_AUGURY_FOLDER = 'memes_augury';
+const TEMP_FOLDER = 'temp';
 
 // Создание папок, если их нет
 if (!fs.existsSync(TEMP_FOLDER)) fs.mkdirSync(TEMP_FOLDER);
@@ -25,48 +21,25 @@ if (!fs.existsSync(MEMES_DAY_FOLDER)) fs.mkdirSync(MEMES_DAY_FOLDER);
 if (!fs.existsSync(MEMES_VIBE_FOLDER)) fs.mkdirSync(MEMES_VIBE_FOLDER);
 if (!fs.existsSync(MEMES_AUGURY_FOLDER)) fs.mkdirSync(MEMES_AUGURY_FOLDER);
 
-// Инициализация бота
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-
-// Состояние пользователя
-const userState = {};
-
-// Инициализация веб-сервера
+// Инициализация Express и вебхуков
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-    res.send('Бот работает!');
+// Используем вебхуки вместо polling
+const bot = new TelegramBot(BOT_TOKEN);
+const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/${BOT_TOKEN}`;
+bot.setWebHook(webhookUrl);
+
+app.use(express.json());
+app.post(`/${BOT_TOKEN}`, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
 });
 
-// Используем kill-port для освобождения портов
-const killPort = require('kill-port');
-
-// Функция для запуска сервера
-async function startServer(port) {
-    try {
-        // Пытаемся освободить порт перед использованием
-        await killPort(port);
-        
-        const server = app.listen(port, () => {
-            console.log(`Веб-сервер запущен на порту ${port}`);
-        });
-        
-        return server;
-    } catch (error) {
-        console.error(`Ошибка при запуске сервера на порту ${port}: ${error}`);
-        // Если не удалось освободить порт, пробуем следующий
-        if (port < 3010) { // Ограничиваем до 10 попыток
-            console.log(`Пробуем порт ${port + 1}...`);
-            return startServer(port + 1);
-        } else {
-            console.error('Не удалось найти свободный порт после нескольких попыток');
-        }
-    }
-}
-
-// Запускаем сервер на указанном порту
-startServer(PORT);
+app.listen(PORT, () => {
+    console.log(`Сервер запущен на порту ${PORT}`);
+    console.log(`Вебхук установлен: ${webhookUrl}`);
+});
 
 // Клавиатура меню
 const menuKeyboard = {
@@ -99,15 +72,15 @@ async function generatePrediction(prompt) {
         exec(command, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Ошибка при выполнении Python-скрипта: ${error}`);
-                resolve("🔮 Сегодня будет удачный день! 🍀"); // Запасное предсказание
+                resolve("🔮 Сегодня будет удачный день! 🍀");
                 return;
             }
             if (stderr) {
                 console.error(`Ошибка в Python-скрипте: ${stderr}`);
-                resolve("🔮 Сегодня будет удачный день! 🍀"); // Запасное предсказание
+                resolve("🔮 Сегодня будет удачный день! 🍀");
                 return;
             }
-            resolve(stdout.trim()); // Возвращаем результат из Python-скрипта
+            resolve(stdout.trim());
         });
     });
 }
@@ -211,4 +184,4 @@ async function createDemotivator(imagePath, text) {
     }
 }
 
-console.log('Бот запущен и работает...');
+console.log('Бот запущен и работает через вебхуки!');
