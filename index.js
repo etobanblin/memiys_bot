@@ -5,27 +5,23 @@ const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
 const axios = require('axios');
 const { exec } = require('child_process');
-
-// Токен вашего бота
 const BOT_TOKEN = '8011558643:AAFc3P3Brnhb1bSWcp7IwyVD45_EFO7XVmM';
 
-// Папки
 const MEMES_DAY_FOLDER = 'memes_day';
 const MEMES_VIBE_FOLDER = 'memes_vibe';
 const MEMES_AUGURY_FOLDER = 'memes_augury';
 const TEMP_FOLDER = 'temp';
 
-// Создание папок, если их нет
 if (!fs.existsSync(TEMP_FOLDER)) fs.mkdirSync(TEMP_FOLDER);
 if (!fs.existsSync(MEMES_DAY_FOLDER)) fs.mkdirSync(MEMES_DAY_FOLDER);
 if (!fs.existsSync(MEMES_VIBE_FOLDER)) fs.mkdirSync(MEMES_VIBE_FOLDER);
 if (!fs.existsSync(MEMES_AUGURY_FOLDER)) fs.mkdirSync(MEMES_AUGURY_FOLDER);
 
-// Инициализация Express и вебхуков
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Используем вебхуки вместо polling
+
 const bot = new TelegramBot(BOT_TOKEN);
 const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/${BOT_TOKEN}`;
 bot.setWebHook(webhookUrl);
@@ -36,7 +32,7 @@ app.post(`/${BOT_TOKEN}`, (req, res) => {
     res.sendStatus(200);
 });
 
-// Функция для поиска свободного порта
+
 function startServer(port) {
     const server = app.listen(port, '0.0.0.0', () => {
         console.log(`Сервер запущен на порту ${port}`);
@@ -53,7 +49,7 @@ function startServer(port) {
 
 startServer(PORT);
 
-// Клавиатура меню
+
 const menuKeyboard = {
     reply_markup: {
         keyboard: [
@@ -64,7 +60,7 @@ const menuKeyboard = {
     },
 };
 
-// Функция для получения случайного мема из указанной папки
+
 function getRandomMeme(folder) {
     try {
         const memes = fs.readdirSync(folder);
@@ -75,7 +71,7 @@ function getRandomMeme(folder) {
     }
 }
 
-// Функция для генерации предсказания с помощью Python-скрипта
+
 async function generatePrediction(prompt) {
     return new Promise((resolve, reject) => {
         const pythonScriptPath = path.join(__dirname, 'generate_prediction.py');
@@ -97,12 +93,12 @@ async function generatePrediction(prompt) {
     });
 }
 
-// Обработчик команды /start
+
 bot.onText(/\/start/, (msg) => {
     bot.sendMessage(msg.chat.id, 'Привет! Выбери функцию:', menuKeyboard);
 });
 
-// Обработчик команды "Мем дня"
+
 bot.onText(/📸 Мем дня/, async (msg) => {
     const memePath = getRandomMeme(MEMES_DAY_FOLDER);
     if (memePath) {
@@ -112,7 +108,7 @@ bot.onText(/📸 Мем дня/, async (msg) => {
     }
 });
 
-// Обработчик команды "Гадание по мему"
+
 bot.onText(/🔮 Гадание по мему/, async (msg) => {
     const memePath = getRandomMeme(MEMES_AUGURY_FOLDER);
     if (memePath) {
@@ -123,7 +119,7 @@ bot.onText(/🔮 Гадание по мему/, async (msg) => {
     }
 });
 
-// Обработчик команды "Рандомный вайб"
+
 bot.onText(/🎲 Рандомный вайб/, async (msg) => {
     const memePath = getRandomMeme(MEMES_VIBE_FOLDER);
     if (memePath) {
@@ -133,16 +129,16 @@ bot.onText(/🎲 Рандомный вайб/, async (msg) => {
     }
 });
 
-// Состояние пользователей
+
 const userState = {};
 
-// Обработчик команды "Создать демотиватор"
+
 bot.onText(/🖼️ Создать демотиватор/, (msg) => {
     bot.sendMessage(msg.chat.id, 'Отправь мне изображение для демотиватора.', menuKeyboard);
     userState[msg.chat.id] = { step: 'waiting_for_image' };
 });
 
-// Обработчик получения фото
+
 bot.on('photo', async (msg) => {
     const chatId = msg.chat.id;
     if (userState[chatId]?.step === 'waiting_for_image') {
@@ -157,7 +153,7 @@ bot.on('photo', async (msg) => {
     }
 });
 
-// Обработчик текстовых сообщений
+
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     if (userState[chatId]?.step === 'waiting_for_text') {
@@ -172,7 +168,7 @@ bot.on('message', async (msg) => {
     }
 });
 
-// Функция для создания демотиватора
+
 async function createDemotivator(imagePath, text) {
     try {
         const img = await loadImage(imagePath);
