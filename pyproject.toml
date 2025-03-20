@@ -1,6 +1,15 @@
-[project]
+
+[tool.poetry]
 name = "repl-nix-workspace"
 version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.11"
-dependencies = []
+description = "Telegram bot with meme generation capabilities"
+authors = ["Replit User"]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+transformers = "*"
+torch = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
