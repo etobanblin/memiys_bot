@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 3000;
 
 
 const bot = new TelegramBot(BOT_TOKEN);
-const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/${BOT_TOKEN}`;
+const webhookUrl = `https://${process.env.REPL_ID}.id.repl.co/${BOT_TOKEN}`;
 bot.setWebHook(webhookUrl);
 
 app.use(express.json());
