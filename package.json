@@ -1,7 +1,6 @@
 {
   "name": "nodejs",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,12 +10,13 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^18.0.6",
-    "axios": "^1.8.2",
+    "axios": "^1.8.4",
     "canvas": "^3.1.0",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "kill-port": "^2.0.1",
     "node-fetch": "^3.3.2",
-    "node-telegram-bot-api": "^0.66.0",
-    "openai": "^4.86.2"
-  }
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "description": ""
 }
