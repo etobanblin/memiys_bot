@@ -26,6 +26,18 @@ if (!fs.existsSync(MEMES_AUGURY_FOLDER)) fs.mkdirSync(MEMES_AUGURY_FOLDER);
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
+const app = express();
+const port = process.env.PORT || 3000; 
+
+// Проверка на главной странице
+app.get('/', (req, res) => {
+  res.send('Bot is running');
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
 const menuKeyboard = {
     reply_markup: {
         keyboard: [
